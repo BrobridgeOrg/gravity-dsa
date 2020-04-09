@@ -14,25 +14,14 @@ import (
 )
 
 type Service struct {
-	app      app.AppImpl
-	dhClient pb.DataHandlerClient
+	app app.AppImpl
 }
 
-func CreateService(app app.AppImpl) *Service {
-
-	address := viper.GetString("data_handler.host")
-
-	// Set up a connection to the server.
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Info("did not connect: %v", err)
-		return nil
-	}
+func CreateService(a app.AppImpl) *Service {
 
 	// Preparing service
 	service := &Service{
-		app:      app,
-		dhClient: pb.NewDataHandlerClient(conn),
+		app: a,
 	}
 
 	return service
@@ -41,6 +30,21 @@ func CreateService(app app.AppImpl) *Service {
 func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb.PublishReply, error) {
 
 	// TODO: Getting URL for data handler to process event
+
+	log.WithFields(log.Fields{
+		"event": in.EventName,
+	}).Info("Received event")
+
+	// Set up a connection to the server.
+	address := viper.GetString("data_handler.host")
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Error("did not connect: %v", err)
+		return &pb.PublishReply{
+			Success: false,
+			Reason:  "Cannot connect to data handler",
+		}, nil
+	}
 
 	// Preparing context
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -52,7 +56,7 @@ func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb
 	}
 
 	// Push message to data handler
-	res, err := service.dhClient.Push(ctx, req)
+	res, err := pb.NewDataHandlerClient(conn).Push(ctx, req)
 	if err != nil {
 		log.Error(err)
 		return &pb.PublishReply{
