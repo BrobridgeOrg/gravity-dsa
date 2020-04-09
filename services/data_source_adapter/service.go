@@ -3,6 +3,7 @@ package runner_supervisor
 import (
 	"time"
 
+	"github.com/flyaways/pool"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
@@ -14,14 +15,41 @@ import (
 )
 
 type Service struct {
-	app app.AppImpl
+	app      app.AppImpl
+	grpcPool *pool.GRPCPool
 }
 
 func CreateService(a app.AppImpl) *Service {
 
+	address := viper.GetString("data_handler.host")
+
+	options := &pool.Options{
+		InitTargets:  []string{address},
+		InitCap:      5,
+		MaxCap:       30,
+		DialTimeout:  time.Second * 5,
+		IdleTimeout:  time.Second * 60,
+		ReadTimeout:  time.Second * 5,
+		WriteTimeout: time.Second * 5,
+	}
+
+	// Initialize connection pool
+	p, err := pool.NewGRPCPool(options, grpc.WithInsecure())
+
+	if err != nil {
+		log.Printf("%#v\n", err)
+		return nil
+	}
+
+	if p == nil {
+		log.Printf("p= %#v\n", p)
+		return nil
+	}
+
 	// Preparing service
 	service := &Service{
-		app: a,
+		app:      a,
+		grpcPool: p,
 	}
 
 	return service
@@ -35,16 +63,16 @@ func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb
 		"event": in.EventName,
 	}).Info("Received event")
 
-	// Set up a connection to the server.
-	address := viper.GetString("data_handler.host")
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	// Getting connection from pool
+	conn, err := service.grpcPool.Get()
 	if err != nil {
-		log.Error("did not connect: %v", err)
+		log.Error("Failed to get connection: %v", err)
 		return &pb.PublishReply{
 			Success: false,
 			Reason:  "Cannot connect to data handler",
 		}, nil
 	}
+	defer service.grpcPool.Put(conn)
 
 	// Preparing context
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
