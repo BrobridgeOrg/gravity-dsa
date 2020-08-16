@@ -11,7 +11,9 @@ import (
 	"google.golang.org/grpc"
 
 	app "gravity-dsa/app/interface"
-	pb "gravity-dsa/pb"
+
+	data_handler "github.com/BrobridgeOrg/gravity-api/service/data_handler"
+	pb "github.com/BrobridgeOrg/gravity-api/service/dsa"
 )
 
 type Service struct {
@@ -78,13 +80,13 @@ func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	req := &pb.PushRequest{
+	req := &data_handler.PushRequest{
 		EventName: in.EventName,
 		Payload:   in.Payload,
 	}
 
 	// Push message to data handler
-	res, err := pb.NewDataHandlerClient(conn).Push(ctx, req)
+	res, err := data_handler.NewDataHandlerClient(conn).Push(ctx, req)
 	if err != nil {
 		log.Error(err)
 		return &pb.PublishReply{
