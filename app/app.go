@@ -25,7 +25,7 @@ func CreateApp() *App {
 
 	host = strings.ReplaceAll(host, ".", "_")
 
-	id := fmt.Sprintf("gravity-%s", host)
+	id := fmt.Sprintf("gravity_dsa-%s", host)
 
 	return &App{
 		id: id,
