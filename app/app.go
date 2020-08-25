@@ -1,30 +1,34 @@
 package app
 
 import (
+	"fmt"
+	"os"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sony/sonyflake"
 	"github.com/spf13/viper"
 )
 
 type App struct {
-	id    uint64
-	flake *sonyflake.Sonyflake
+	id string
 }
 
 func CreateApp() *App {
 
-	// Genereate a unique ID for instance
-	flake := sonyflake.NewSonyflake(sonyflake.Settings{})
-	id, err := flake.NextID()
+	// Using hostname (pod name) by default
+	host, err := os.Hostname()
 	if err != nil {
+		log.Error(err)
 		return nil
 	}
 
+	host = strings.ReplaceAll(host, ".", "_")
+
+	id := fmt.Sprintf("gravity-%s", host)
+
 	return &App{
-		id:    id,
-		flake: flake,
+		id: id,
 	}
 }
 

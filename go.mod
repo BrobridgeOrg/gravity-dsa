@@ -3,10 +3,9 @@ module gravity-dsa
 go 1.13
 
 require (
-	github.com/BrobridgeOrg/gravity-api v0.0.0-00010101000000-000000000000
+	github.com/BrobridgeOrg/gravity-api v0.0.0-20200824082319-fe8e34a23ab9
 	github.com/flyaways/pool v1.0.1
 	github.com/sirupsen/logrus v1.4.2
-	github.com/sony/sonyflake v1.0.0
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.3.0 // indirect
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
