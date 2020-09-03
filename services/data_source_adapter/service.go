@@ -3,7 +3,7 @@ package runner_supervisor
 import (
 	"time"
 
-	"github.com/flyaways/pool"
+	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
@@ -18,33 +18,28 @@ import (
 
 type Service struct {
 	app      app.AppImpl
-	grpcPool *pool.GRPCPool
+	grpcPool *grpc_connection_pool.GRPCPool
 }
 
 func CreateService(a app.AppImpl) *Service {
 
 	address := viper.GetString("data_handler.host")
 
-	options := &pool.Options{
-		InitTargets:  []string{address},
-		InitCap:      5,
-		MaxCap:       30,
-		DialTimeout:  time.Second * 5,
-		IdleTimeout:  time.Second * 60,
-		ReadTimeout:  time.Second * 5,
-		WriteTimeout: time.Second * 5,
+	options := &grpc_connection_pool.Options{
+		InitCap:     8,
+		MaxCap:      16,
+		DialTimeout: time.Second * 20,
 	}
 
 	// Initialize connection pool
-	p, err := pool.NewGRPCPool(options, grpc.WithInsecure())
-
+	p, err := grpc_connection_pool.NewGRPCPool(address, options, grpc.WithInsecure())
 	if err != nil {
-		log.Printf("%#v\n", err)
+		log.Error(err)
 		return nil
 	}
 
 	if p == nil {
-		log.Printf("p= %#v\n", p)
+		log.Error(err)
 		return nil
 	}
 
@@ -59,8 +54,6 @@ func CreateService(a app.AppImpl) *Service {
 
 func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb.PublishReply, error) {
 
-	// TODO: Getting URL for data handler to process event
-
 	log.WithFields(log.Fields{
 		"event": in.EventName,
 	}).Info("Received event")
@@ -74,7 +67,6 @@ func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb
 			Reason:  "Cannot connect to data handler",
 		}, nil
 	}
-	defer service.grpcPool.Put(conn)
 
 	// Preparing context
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
