@@ -1,6 +1,7 @@
 package runner_supervisor
 
 import (
+	"sync"
 	"time"
 
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
@@ -15,6 +16,16 @@ import (
 	data_handler "github.com/BrobridgeOrg/gravity-api/service/data_handler"
 	pb "github.com/BrobridgeOrg/gravity-api/service/dsa"
 )
+
+var PublishSuccess = pb.PublishReply{
+	Success: true,
+}
+
+var requestPool = sync.Pool{
+	New: func() interface{} {
+		return &data_handler.PushRequest{}
+	},
+}
 
 type Service struct {
 	app      app.AppImpl
@@ -53,11 +64,11 @@ func CreateService(a app.AppImpl) *Service {
 }
 
 func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb.PublishReply, error) {
-
-	log.WithFields(log.Fields{
-		"event": in.EventName,
-	}).Info("Received event")
-
+	/*
+		log.WithFields(log.Fields{
+			"event": in.EventName,
+		}).Info("Received event")
+	*/
 	// Getting connection from pool
 	conn, err := service.grpcPool.Get()
 	if err != nil {
@@ -72,20 +83,23 @@ func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	req := &data_handler.PushRequest{
-		EventName: in.EventName,
-		Payload:   in.Payload,
-	}
+	// Prepare request
+	req := requestPool.Get().(*data_handler.PushRequest)
+	req.EventName = in.EventName
+	req.Payload = in.Payload
 
 	// Push message to data handler
 	res, err := data_handler.NewDataHandlerClient(conn).Push(ctx, req)
 	if err != nil {
 		log.Error(err)
+		requestPool.Put(req)
 		return &pb.PublishReply{
 			Success: false,
 			Reason:  "Data handler cannot handle this event",
 		}, nil
 	}
+
+	requestPool.Put(req)
 
 	if res.Success == false {
 		return &pb.PublishReply{
@@ -94,7 +108,5 @@ func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb
 		}, nil
 	}
 
-	return &pb.PublishReply{
-		Success: true,
-	}, nil
+	return &PublishSuccess, nil
 }
