@@ -17,6 +17,8 @@ import (
 	pb "github.com/BrobridgeOrg/gravity-api/service/dsa"
 )
 
+//var counter uint64
+
 var PublishSuccess = pb.PublishReply{
 	Success: true,
 }
@@ -64,6 +66,13 @@ func CreateService(a app.AppImpl) *Service {
 }
 
 func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb.PublishReply, error) {
+	/*
+		id := atomic.AddUint64((*uint64)(&counter), 1)
+
+		if id%1000 == 0 {
+			log.Info(id)
+		}
+	*/
 	/*
 		log.WithFields(log.Fields{
 			"event": in.EventName,
