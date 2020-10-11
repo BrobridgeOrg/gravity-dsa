@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/BrobridgeOrg/gravity-api v0.2.0
-	github.com/cfsghost/grpc-connection-pool v0.1.0
+	github.com/cfsghost/grpc-connection-pool v0.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.3.0 // indirect
@@ -14,3 +14,4 @@ require (
 )
 
 //replace github.com/BrobridgeOrg/gravity-api => ../gravity-api
+//replace github.com/cfsghost/grpc-connection-pool => /Users/fred/works/opensource/grpc-connection-pool

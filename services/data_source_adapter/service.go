@@ -1,4 +1,4 @@
-package runner_supervisor
+package data_source_adapter
 
 import (
 	"sync"
