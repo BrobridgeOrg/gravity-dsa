@@ -1,7 +1,7 @@
 package data_source_adapter
 
 import (
-	"sync"
+	"io"
 	"time"
 
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
@@ -17,21 +17,16 @@ import (
 	pb "github.com/BrobridgeOrg/gravity-api/service/dsa"
 )
 
-//var counter uint64
+var counter uint64
 
 var PublishSuccess = pb.PublishReply{
 	Success: true,
 }
 
-var requestPool = sync.Pool{
-	New: func() interface{} {
-		return &data_handler.PushRequest{}
-	},
-}
-
 type Service struct {
 	app      app.AppImpl
 	grpcPool *grpc_connection_pool.GRPCPool
+	incoming chan *data_handler.PushRequest
 }
 
 func CreateService(a app.AppImpl) *Service {
@@ -60,7 +55,17 @@ func CreateService(a app.AppImpl) *Service {
 	service := &Service{
 		app:      a,
 		grpcPool: p,
+		incoming: make(chan *data_handler.PushRequest, 4096),
 	}
+
+	go service.startWorker()
+	go service.startWorker()
+	go service.startWorker()
+	go service.startWorker()
+	go service.startWorker()
+	go service.startWorker()
+	go service.startWorker()
+	go service.startWorker()
 
 	return service
 }
@@ -78,44 +83,37 @@ func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb
 			"event": in.EventName,
 		}).Info("Received event")
 	*/
-	// Getting connection from pool
-	conn, err := service.grpcPool.Get()
-	if err != nil {
-		log.Error("Failed to get connection: %v", err)
-		return &pb.PublishReply{
-			Success: false,
-			Reason:  "Cannot connect to data handler",
-		}, nil
-	}
 
-	// Preparing context
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	// Prepare request
-	req := requestPool.Get().(*data_handler.PushRequest)
-	req.EventName = in.EventName
-	req.Payload = in.Payload
-
-	// Push message to data handler
-	res, err := data_handler.NewDataHandlerClient(conn).Push(ctx, req)
+	err := service.publish(in.EventName, in.Payload)
 	if err != nil {
 		log.Error(err)
-		requestPool.Put(req)
 		return &pb.PublishReply{
 			Success: false,
-			Reason:  "Data handler cannot handle this event",
-		}, nil
-	}
-
-	requestPool.Put(req)
-
-	if res.Success == false {
-		return &pb.PublishReply{
-			Success: false,
-			Reason:  res.Reason,
+			Reason:  err.Error(),
 		}, nil
 	}
 
 	return &PublishSuccess, nil
+}
+
+func (service *Service) PublishEvents(stream pb.DataSourceAdapter_PublishEventsServer) error {
+
+	for {
+		in, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+		/*
+			id := atomic.AddUint64((*uint64)(&counter), 1)
+
+			if id%1000 == 0 {
+				log.Info(id)
+			}
+		*/
+		service.publishAsync(in.EventName, in.Payload)
+	}
 }
