@@ -51,6 +51,12 @@ func CreateService(a app.AppImpl) *Service {
 		return nil
 	}
 
+	// Register initializer for stream
+	p.SetStreamInitializer("push", func(conn *grpc.ClientConn) (interface{}, error) {
+		client := data_handler.NewDataHandlerClient(conn)
+		return client.PushStream(context.Background())
+	})
+
 	// Preparing service
 	service := &Service{
 		app:      a,

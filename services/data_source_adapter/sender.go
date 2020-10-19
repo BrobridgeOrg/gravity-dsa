@@ -3,11 +3,9 @@ package data_source_adapter
 import (
 	"errors"
 	"sync"
-	"time"
 
 	data_handler "github.com/BrobridgeOrg/gravity-api/service/data_handler"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 )
 
 var requestPool = sync.Pool{
@@ -43,28 +41,42 @@ func (service *Service) publish(eventName string, payload []byte) error {
 
 func (service *Service) sendData(req *data_handler.PushRequest) error {
 
-	// Getting connection from pool
-	conn, err := service.grpcPool.Get()
+	// Getting stream from pool
+	s, err := service.grpcPool.GetStream("push")
 	if err != nil {
 		log.Error("Failed to get connection: %v", err)
 		return errors.New("Cannot connect to data handler")
 	}
 
-	// Preparing context
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	// Push message to data handler
-	res, err := data_handler.NewDataHandlerClient(conn).Push(ctx, req)
+	// Send request
+	err = s.(data_handler.DataHandler_PushStreamClient).Send(req)
 	if err != nil {
 		log.Error(err)
-		return errors.New("Data handler cannot handle this event")
+		return err
 	}
+	/*
+		// Getting connection from pool
+		conn, err := service.grpcPool.Get()
+		if err != nil {
+			log.Error("Failed to get connection: %v", err)
+			return errors.New("Cannot connect to data handler")
+		}
 
-	if res.Success == false {
-		return errors.New(res.Reason)
-	}
+		// Preparing context
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
 
+		// Push message to data handler
+		res, err := data_handler.NewDataHandlerClient(conn).Push(ctx, req)
+		if err != nil {
+			log.Error(err)
+			return errors.New("Data handler cannot handle this event")
+		}
+
+		if res.Success == false {
+			return errors.New(res.Reason)
+		}
+	*/
 	return nil
 }
 
