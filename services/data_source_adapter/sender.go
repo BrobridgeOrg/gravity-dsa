@@ -42,41 +42,21 @@ func (service *Service) publish(eventName string, payload []byte) error {
 func (service *Service) sendData(req *data_handler.PushRequest) error {
 
 	// Getting stream from pool
-	s, err := service.grpcPool.GetStream("push")
+	err := service.grpcPool.GetStream("push", func(s interface{}) error {
+
+		// Send request
+		err := s.(data_handler.DataHandler_PushStreamClient).Send(req)
+		if err != nil {
+			log.Error(err)
+		}
+
+		return err
+	})
 	if err != nil {
 		log.Error("Failed to get connection: %v", err)
 		return errors.New("Cannot connect to data handler")
 	}
 
-	// Send request
-	err = s.(data_handler.DataHandler_PushStreamClient).Send(req)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	/*
-		// Getting connection from pool
-		conn, err := service.grpcPool.Get()
-		if err != nil {
-			log.Error("Failed to get connection: %v", err)
-			return errors.New("Cannot connect to data handler")
-		}
-
-		// Preparing context
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		// Push message to data handler
-		res, err := data_handler.NewDataHandlerClient(conn).Push(ctx, req)
-		if err != nil {
-			log.Error(err)
-			return errors.New("Data handler cannot handle this event")
-		}
-
-		if res.Success == false {
-			return errors.New(res.Reason)
-		}
-	*/
 	return nil
 }
 
