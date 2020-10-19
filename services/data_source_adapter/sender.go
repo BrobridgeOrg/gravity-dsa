@@ -45,12 +45,7 @@ func (service *Service) sendData(req *data_handler.PushRequest) error {
 	err := service.grpcPool.GetStream("push", func(s interface{}) error {
 
 		// Send request
-		err := s.(data_handler.DataHandler_PushStreamClient).Send(req)
-		if err != nil {
-			log.Error(err)
-		}
-
-		return err
+		return s.(data_handler.DataHandler_PushStreamClient).Send(req)
 	})
 	if err != nil {
 		log.Error("Failed to get connection: %v", err)
