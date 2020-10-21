@@ -61,7 +61,7 @@ func CreateService(a app.AppImpl) *Service {
 	service := &Service{
 		app:      a,
 		grpcPool: p,
-		incoming: make(chan *data_handler.PushRequest, 4096),
+		incoming: make(chan *data_handler.PushRequest, 102400),
 	}
 
 	go service.startWorker()
