@@ -55,7 +55,7 @@ func (service *Service) sendData(req *data_handler.PushRequest) error {
 	return nil
 }
 
-func (service *Service) startWorker() {
+func (service *Service) eventHandler() {
 
 	for {
 		select {

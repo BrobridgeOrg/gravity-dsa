@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -25,6 +26,9 @@ func init() {
 	if err := viper.ReadInConfig(); err != nil {
 		log.Warn("No configuration file was loaded")
 	}
+
+	runtime.GOMAXPROCS(16)
+
 	/*
 		go func() {
 

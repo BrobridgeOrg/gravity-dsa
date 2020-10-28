@@ -64,14 +64,7 @@ func CreateService(a app.AppImpl) *Service {
 		incoming: make(chan *data_handler.PushRequest, 102400),
 	}
 
-	go service.startWorker()
-	go service.startWorker()
-	go service.startWorker()
-	go service.startWorker()
-	go service.startWorker()
-	go service.startWorker()
-	go service.startWorker()
-	go service.startWorker()
+	go service.eventHandler()
 
 	return service
 }
