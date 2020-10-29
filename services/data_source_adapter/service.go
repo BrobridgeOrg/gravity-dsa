@@ -2,6 +2,7 @@ package data_source_adapter
 
 import (
 	"io"
+	"sync/atomic"
 	"time"
 
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
@@ -34,8 +35,8 @@ func CreateService(a app.AppImpl) *Service {
 	address := viper.GetString("data_handler.host")
 
 	options := &grpc_connection_pool.Options{
-		InitCap:     8,
-		MaxCap:      16,
+		InitCap:     1,
+		MaxCap:      1,
 		DialTimeout: time.Second * 20,
 	}
 
@@ -106,13 +107,11 @@ func (service *Service) PublishEvents(stream pb.DataSourceAdapter_PublishEventsS
 		if err != nil {
 			return err
 		}
-		/*
-			id := atomic.AddUint64((*uint64)(&counter), 1)
+		id := atomic.AddUint64((*uint64)(&counter), 1)
 
-			if id%1000 == 0 {
-				log.Info(id)
-			}
-		*/
+		if id%1000 == 0 {
+			log.Info(id)
+		}
 		service.publishAsync(in.EventName, in.Payload)
 	}
 }
