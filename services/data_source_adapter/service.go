@@ -2,7 +2,6 @@ package data_source_adapter
 
 import (
 	"io"
-	"sync/atomic"
 	"time"
 
 	grpc_connection_pool "github.com/cfsghost/grpc-connection-pool"
@@ -62,7 +61,7 @@ func CreateService(a app.AppImpl) *Service {
 	service := &Service{
 		app:      a,
 		grpcPool: p,
-		incoming: make(chan *data_handler.PushRequest, 102400),
+		incoming: make(chan *data_handler.PushRequest, 204800),
 	}
 
 	go service.eventHandler()
@@ -107,11 +106,13 @@ func (service *Service) PublishEvents(stream pb.DataSourceAdapter_PublishEventsS
 		if err != nil {
 			return err
 		}
-		id := atomic.AddUint64((*uint64)(&counter), 1)
+		/*
+			id := atomic.AddUint64((*uint64)(&counter), 1)
 
-		if id%1000 == 0 {
-			log.Info(id)
-		}
+			if id%1000 == 0 {
+				log.Info(id)
+			}
+		*/
 		service.publishAsync(in.EventName, in.Payload)
 	}
 }
