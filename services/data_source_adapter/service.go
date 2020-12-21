@@ -83,7 +83,7 @@ func (service *Service) Publish(ctx context.Context, in *pb.PublishRequest) (*pb
 		}).Info("Received event")
 	*/
 
-	err := service.publish(in.EventName, in.Payload)
+	err := service.publish(in.EventName, in.Payload, in.Meta)
 	if err != nil {
 		log.Error(err)
 		return &pb.PublishReply{
@@ -113,6 +113,6 @@ func (service *Service) PublishEvents(stream pb.DataSourceAdapter_PublishEventsS
 				log.Info(id)
 			}
 		*/
-		service.publishAsync(in.EventName, in.Payload)
+		service.publishAsync(in.EventName, in.Payload, in.Meta)
 	}
 }

@@ -1,10 +1,10 @@
 module gravity-dsa
 
-go 1.13
+go 1.15
 
 require (
 	github.com/BrobridgeOrg/gravity-adapter-nats v0.0.0-20201013172819-41aa2d00d5ab // indirect
-	github.com/BrobridgeOrg/gravity-api v0.2.2
+	github.com/BrobridgeOrg/gravity-api v0.2.5
 	github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6 // indirect
 	github.com/cfsghost/grpc-connection-pool v0.6.0
 	github.com/sirupsen/logrus v1.6.0

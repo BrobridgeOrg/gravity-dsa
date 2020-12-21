@@ -14,24 +14,26 @@ var requestPool = sync.Pool{
 	},
 }
 
-func (service *Service) publishAsync(eventName string, payload []byte) error {
+func (service *Service) publishAsync(eventName string, payload []byte, meta map[string][]byte) error {
 
 	// Prepare request
 	req := requestPool.Get().(*data_handler.PushRequest)
 	req.EventName = eventName
 	req.Payload = payload
+	req.Meta = meta
 
 	service.incoming <- req
 
 	return nil
 }
 
-func (service *Service) publish(eventName string, payload []byte) error {
+func (service *Service) publish(eventName string, payload []byte, meta map[string][]byte) error {
 
 	// Prepare request
 	req := requestPool.Get().(*data_handler.PushRequest)
 	req.EventName = eventName
 	req.Payload = payload
+	req.Meta = meta
 
 	err := service.sendData(req)
 	requestPool.Put(req)
